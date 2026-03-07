@@ -2,13 +2,13 @@ import { initializeApp } from 'firebase/app';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
-    apiKey: 'AIzaSyB1vweb5mfT5LpOgKntOV4r7EPeFTfL5-c',
-    authDomain: 'boost--mark.firebaseapp.com',
-    projectId: 'boost--mark',
-    storageBucket: 'boost--mark.firebasestorage.app',
-    messagingSenderId: '701522474256',
-    appId: '1:701522474256:web:f5ed3730b08ae158322195',
-    measurementId: 'G-QCJS0C9J5L',
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 export const app = initializeApp(firebaseConfig);
