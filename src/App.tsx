@@ -11,9 +11,8 @@ import { AlertsPanel } from './components/AlertsPanel/AlertsPanel';
 import { FileUpload } from './components/FileUpload/FileUpload';
 import { Filters } from './components/Filters/Filters';
 import { computeABC, computeVolumeEffect, computeMixEffect, computeKPIs } from './utils/analytics';
-import { MOCK_PRODUCTS, ALL_PERIODS, ALL_REGIONS } from './data/mockData';
 import type { Product, ParsedData, FilterState, LayoutPadraoMeta } from './types';
-import { BarChart2, LayoutDashboard, Zap, Building2, Calendar, Store } from 'lucide-react';
+import { BarChart2, LayoutDashboard, Zap, Building2, Calendar, Store, UploadCloud } from 'lucide-react';
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 type Tab = 'dashboard' | 'abc' | 'effects' | 'heatmap';
@@ -25,14 +24,39 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'heatmap', label: 'Giro / Heatmap', icon: <BarChart2 size={15} /> },
 ];
 
+// ─── Empty State ──────────────────────────────────────────────────────────────
+function EmptyState({ onData }: { onData: (d: ParsedData) => void }) {
+  return (
+    <div className="empty-state">
+      <div className="empty-state__card">
+        <div className="empty-state__icon">
+          <UploadCloud size={48} strokeWidth={1.2} />
+        </div>
+        <h2 className="empty-state__title">Nenhum dado carregado</h2>
+        <p className="empty-state__desc">
+          Importe seu relatório de vendas para visualizar a análise sell-out completa —
+          Curva ABC, Efeito Volume/Mix, Giro de Estoque e alertas automáticos.
+        </p>
+        <div className="empty-state__upload">
+          <FileUpload onData={onData} />
+        </div>
+        <p className="empty-state__hint">
+          Formatos aceitos: <strong>.xlsx</strong> (relatório PDV) e <strong>.csv</strong>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
-  const [allProducts, setAllProducts] = useState<Product[]>(MOCK_PRODUCTS);
-  const [periods, setPeriods] = useState<string[]>(ALL_PERIODS);
-  const [regions, setRegions] = useState<string[]>(ALL_REGIONS);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [periods, setPeriods] = useState<string[]>([]);
+  const [regions, setRegions] = useState<string[]>([]);
   const [filters, setFilters] = useState<FilterState>({ period: 'all', region: 'all' });
   const [tab, setTab] = useState<Tab>('dashboard');
-  const [isDemoMode, setIsDemoMode] = useState(true);
   const [layoutMeta, setLayoutMeta] = useState<LayoutPadraoMeta | null>(null);
+
+  const hasData = allProducts.length > 0;
 
   // ── Filter products ──────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -43,7 +67,7 @@ export default function App() {
     });
   }, [allProducts, filters]);
 
-  // Baseline = previous period or same set for relative comparisons
+  // Baseline = período anterior ao selecionado
   const baselinePeriod = useMemo(() => {
     if (periods.length < 2) return filtered;
     const prevIdx = filters.period !== 'all'
@@ -62,17 +86,23 @@ export default function App() {
     setPeriods(data.periods);
     setRegions(data.regions);
     setFilters({ period: 'all', region: 'all' });
-    setIsDemoMode(false);
     setLayoutMeta((data as ParsedData & { layoutPadraoMeta?: LayoutPadraoMeta }).layoutPadraoMeta ?? null);
   }
 
-  function loadDemo() {
-    setAllProducts(MOCK_PRODUCTS);
-    setPeriods(ALL_PERIODS);
-    setRegions(ALL_REGIONS);
-    setFilters({ period: 'all', region: 'all' });
-    setIsDemoMode(true);
-    setLayoutMeta(null);
+  // ── Se não tiver dados, mostra o empty state centralizado ─────────────────
+  if (!hasData) {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <div className="app-header__brand">
+            <span className="logo-icon">⚡</span>
+            <span className="logo-text">Boost<b>Mark</b></span>
+            <span className="logo-tag">Sell-Out Intelligence</span>
+          </div>
+        </header>
+        <EmptyState onData={handleData} />
+      </div>
+    );
   }
 
   return (
@@ -96,10 +126,6 @@ export default function App() {
             </button>
           ))}
         </nav>
-
-        {isDemoMode && (
-          <div className="demo-badge">DEMO</div>
-        )}
       </header>
 
       {/* ── LayoutPadrao Info Banner ───────────────────────────────────── */}
@@ -132,11 +158,6 @@ export default function App() {
           <section className="sidebar-section">
             <h3 className="sidebar-title">Importar Dados</h3>
             <FileUpload onData={handleData} />
-            {!isDemoMode && (
-              <button className="btn-ghost mt-xs" onClick={loadDemo} style={{ width: '100%' }}>
-                ↩ Carregar Demo
-              </button>
-            )}
           </section>
 
           <section className="sidebar-section">
