@@ -16,9 +16,10 @@ interface CardProps {
     sub?: string;
     trend?: 'up' | 'down' | 'neutral';
     accent?: string;
+    delta?: string; // Δ% ou Δ absoluto
 }
 
-function Card({ icon, label, value, sub, trend, accent = '#6c63ff' }: CardProps) {
+function Card({ icon, label, value, sub, trend, accent = '#6c63ff', delta }: CardProps) {
     const trendColor = trend === 'up' ? '#22c55e' : trend === 'down' ? '#ef4444' : '#94a3b8';
     const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : null;
 
@@ -28,7 +29,14 @@ function Card({ icon, label, value, sub, trend, accent = '#6c63ff' }: CardProps)
                 {icon}
             </div>
             <div className="kpi-card__body">
-                <span className="kpi-card__label">{label}</span>
+                <span className="kpi-card__label">
+                    {label}
+                    {delta && (
+                        <span className="kpi-card__delta" style={{ color: trendColor }}>
+                            {delta}
+                        </span>
+                    )}
+                </span>
                 <span className="kpi-card__value">{value}</span>
                 {sub && (
                     <span className="kpi-card__sub" style={{ color: trendColor }}>
@@ -48,6 +56,12 @@ const fmt = (n: number) =>
             ? `R$ ${(n / 1_000).toFixed(1)}K`
             : `R$ ${n.toFixed(0)}`;
 
+const fmtPct = (n: number | undefined) => {
+    if (n === undefined) return undefined;
+    const sign = n >= 0 ? '+' : '';
+    return `${sign}${n.toFixed(1)}%`;
+};
+
 export function KPICards({ kpis }: KPICardsProps) {
     const volTrend = kpis.volumeEffectTotal >= 0 ? 'up' : 'down';
     const mixTrend = kpis.mixEffectTotal >= 0 ? 'up' : 'down';
@@ -56,16 +70,18 @@ export function KPICards({ kpis }: KPICardsProps) {
         <div className="kpi-grid">
             <Card
                 icon={<Zap size={20} />}
-                label="Faturamento Total"
+                label="Faturamento"
                 value={fmt(kpis.totalRevenue)}
+                delta={fmtPct(kpis.revenueDelta)}
+                trend={kpis.revenueDelta !== undefined ? (kpis.revenueDelta >= 0 ? 'up' : 'down') : 'neutral'}
                 sub={`${kpis.totalUnits.toLocaleString('pt-BR')} unidades`}
                 accent="#6c63ff"
             />
             <Card
                 icon={<BarChart2 size={20} />}
                 label="Curva A / B / C"
-                value={`${kpis.abcPercent.A.toFixed(0)}% / ${kpis.abcPercent.B.toFixed(0)}% / ${kpis.abcPercent.C.toFixed(0)}%`}
-                sub={`${kpis.abcCount.A}A · ${kpis.abcCount.B}B · ${kpis.abcCount.C}C itens`}
+                value={`${kpis.abcPercent.A.toFixed(0)}% / ${kpis.abcPercent.B.toFixed(0)}%`}
+                sub={`${kpis.abcCount.A}A · ${kpis.abcCount.B}B itens`}
                 accent="#8b5cf6"
             />
             <Card
@@ -80,15 +96,17 @@ export function KPICards({ kpis }: KPICardsProps) {
                 icon={<ShoppingCart size={20} />}
                 label="Efeito Mix"
                 value={`${kpis.mixEffectTotal >= 0 ? '+' : ''}${kpis.mixEffectTotal.toFixed(2)} p.p.`}
-                sub={kpis.mixEffectTotal >= 0 ? 'Ganho de espaço' : 'Perda de espaço na cesta'}
+                sub={kpis.mixEffectTotal >= 0 ? 'Ganho de espaço' : 'Perda de espaço'}
                 trend={mixTrend}
                 accent="#10b981"
             />
             <Card
                 icon={<Repeat2 size={20} />}
-                label="Giro de Estoque"
+                label="Giro Est."
                 value={kpis.avgStockTurnover.toFixed(2)}
-                sub="Vendas / Estoque Médio"
+                delta={kpis.turnoverDelta !== undefined ? `${kpis.turnoverDelta >= 0 ? '+' : ''}${kpis.turnoverDelta.toFixed(2)}` : undefined}
+                trend={kpis.turnoverDelta !== undefined ? (kpis.turnoverDelta >= 0 ? 'up' : 'down') : 'neutral'}
+                sub="Vendas / Est. Médio"
                 accent="#f59e0b"
             />
             <Card

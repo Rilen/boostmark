@@ -187,7 +187,8 @@ export async function parseCSV(file: File): Promise<ParsedData> {
                 });
                 const periods = [...new Set(products.map((p) => p.period))];
                 const regions = [...new Set(products.map((p) => p.region))];
-                resolve({ products, periods, regions });
+                const categories = [...new Set(products.map((p) => p.category).filter(Boolean) as string[])];
+                resolve({ products, periods, regions, categories });
             },
             error: (err) => reject(err),
         });
@@ -221,7 +222,8 @@ export async function parseXLSX(file: File): Promise<ParsedData> {
                         if (products.length > 0) {
                             const periods = [...new Set(products.map((p) => p.period))];
                             const regions = [...new Set(products.map((p) => p.region))];
-                            resolve({ products, periods, regions, layoutPadraoMeta: meta } as ParsedData & { layoutPadraoMeta: LayoutPadraoMeta });
+                            const categories = [...new Set(products.map((p) => p.category).filter(Boolean) as string[])];
+                            resolve({ products, periods, regions, categories, layoutPadraoMeta: meta } as ParsedData & { layoutPadraoMeta: LayoutPadraoMeta });
                             return;
                         }
                     }
@@ -238,7 +240,8 @@ export async function parseXLSX(file: File): Promise<ParsedData> {
                     if (products.length > 0) {
                         const periods = [...new Set(products.map((p) => p.period))];
                         const regions = [...new Set(products.map((p) => p.region))];
-                        resolve({ products, periods, regions });
+                        const categories = [...new Set(products.map((p) => p.category).filter(Boolean) as string[])];
+                        resolve({ products, periods, regions, categories });
                         return;
                     }
                 }

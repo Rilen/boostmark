@@ -6,13 +6,23 @@ import {
   VolumeEffectLine,
   MixEffectBar,
   StockTurnoverHeatmap,
+  TrendAnalysisChart,
+  RegionalStockBar
 } from './components/Charts/Charts';
 import { AlertsPanel } from './components/AlertsPanel/AlertsPanel';
 import { FileUpload } from './components/FileUpload/FileUpload';
 import { Filters } from './components/Filters/Filters';
-import { computeABC, computeVolumeEffect, computeMixEffect, computeKPIs } from './utils/analytics';
+import {
+  computeABC,
+  computeVolumeEffect,
+  computeMixEffect,
+  computeKPIs,
+  computeTrend,
+  computeStockByRegion
+} from './utils/analytics';
 import type { Product, ParsedData, FilterState, LayoutPadraoMeta } from './types';
-import { BarChart2, LayoutDashboard, Zap, Building2, Calendar, Store, UploadCloud } from 'lucide-react';
+import { BarChart2, LayoutDashboard, Zap, Building2, Calendar, Store, UploadCloud, TrendingUp, PackageSearch } from 'lucide-react';
+import logomarca from './data/logomarca.png';
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 type Tab = 'dashboard' | 'abc' | 'effects' | 'heatmap';
@@ -29,6 +39,9 @@ function EmptyState({ onData }: { onData: (d: ParsedData) => void }) {
   return (
     <div className="empty-state">
       <div className="empty-state__card">
+        <div className="empty-state__logo">
+          <img src={logomarca} alt="BoostMark Logo" />
+        </div>
         <div className="empty-state__icon">
           <UploadCloud size={48} strokeWidth={1.2} />
         </div>
@@ -52,7 +65,13 @@ export default function App() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [periods, setPeriods] = useState<string[]>([]);
   const [regions, setRegions] = useState<string[]>([]);
-  const [filters, setFilters] = useState<FilterState>({ period: 'all', region: 'all' });
+  const [categories, setCategories] = useState<string[]>([]);
+  const [filters, setFilters] = useState<FilterState>({
+    period: 'all',
+    region: 'all',
+    category: 'all',
+    product: ''
+  });
   const [tab, setTab] = useState<Tab>('dashboard');
   const [layoutMeta, setLayoutMeta] = useState<LayoutPadraoMeta | null>(null);
 
@@ -63,6 +82,8 @@ export default function App() {
     return allProducts.filter((p) => {
       if (filters.period !== 'all' && p.period !== filters.period) return false;
       if (filters.region !== 'all' && p.region !== filters.region) return false;
+      if (filters.category !== 'all' && p.category !== filters.category) return false;
+      if (filters.product && !p.name.toLowerCase().includes(filters.product.toLowerCase())) return false;
       return true;
     });
   }, [allProducts, filters]);
@@ -70,22 +91,33 @@ export default function App() {
   // Baseline = período anterior ao selecionado
   const baselinePeriod = useMemo(() => {
     if (periods.length < 2) return filtered;
-    const prevIdx = filters.period !== 'all'
-      ? Math.max(0, periods.indexOf(filters.period) - 1)
-      : 0;
-    return allProducts.filter((p) => p.period === periods[prevIdx]);
-  }, [allProducts, periods, filters.period, filtered]);
+    const currentPeriodIdx = filters.period !== 'all' ? periods.indexOf(filters.period) : periods.length - 1;
+    const prevIdx = Math.max(0, currentPeriodIdx - 1);
+
+    return allProducts.filter((p) => {
+      if (p.period !== periods[prevIdx]) return false;
+      // Mantém filtros de região/categoria no baseline para comparação justa
+      if (filters.region !== 'all' && p.region !== filters.region) return false;
+      if (filters.category !== 'all' && p.category !== filters.category) return false;
+      return true;
+    });
+  }, [allProducts, periods, filters, filtered]);
 
   const kpis = useMemo(() => computeKPIs(filtered, allProducts, baselinePeriod), [filtered, allProducts, baselinePeriod]);
   const abcProducts = useMemo(() => computeABC(filtered), [filtered]);
   const volumeEffects = useMemo(() => computeVolumeEffect(baselinePeriod, filtered), [baselinePeriod, filtered]);
   const mixEffects = useMemo(() => computeMixEffect(baselinePeriod, filtered), [baselinePeriod, filtered]);
 
+  // Dados agregados para novos gráficos
+  const trendData = useMemo(() => computeTrend(allProducts, periods), [allProducts, periods]);
+  const regionalStock = useMemo(() => computeStockByRegion(abcProducts), [abcProducts]);
+
   function handleData(data: ParsedData) {
     setAllProducts(data.products);
     setPeriods(data.periods);
     setRegions(data.regions);
-    setFilters({ period: 'all', region: 'all' });
+    setCategories(data.categories || []);
+    setFilters({ period: 'all', region: 'all', category: 'all', product: '' });
     setLayoutMeta((data as ParsedData & { layoutPadraoMeta?: LayoutPadraoMeta }).layoutPadraoMeta ?? null);
   }
 
@@ -165,6 +197,7 @@ export default function App() {
             <Filters
               periods={periods}
               regions={regions}
+              categories={categories}
               filters={filters}
               onChange={setFilters}
             />
@@ -198,6 +231,26 @@ export default function App() {
           {tab === 'dashboard' && (
             <>
               <KPICards kpis={kpis} />
+
+              <div className="charts-grid-2">
+                <div className="chart-card">
+                  <h4 className="chart-title">
+                    <TrendingUp size={14} className="inline-icon" /> Tendência de Vendas (Histórico)
+                  </h4>
+                  <div className="chart-wrap chart-wrap--lg">
+                    <TrendAnalysisChart trend={trendData} />
+                  </div>
+                </div>
+                <div className="chart-card">
+                  <h4 className="chart-title">
+                    <PackageSearch size={14} className="inline-icon" /> Saúde de Estoque por Loja/Região
+                  </h4>
+                  <div className="chart-wrap chart-wrap--lg">
+                    <RegionalStockBar data={regionalStock} />
+                  </div>
+                </div>
+              </div>
+
               <div className="charts-grid-2">
                 <div className="chart-card">
                   <h4 className="chart-title">Faturamento por Produto – Curva ABC</h4>

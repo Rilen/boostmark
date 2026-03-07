@@ -14,7 +14,7 @@ import {
     type TooltipItem,
 } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
-import type { KPISummary, ProductABC, VolumeEffect, MixEffect } from '../../types';
+import type { KPISummary, ProductABC, VolumeEffect, MixEffect, TrendPoint, StockByRegion } from '../../types';
 
 ChartJS.register(
     CategoryScale, LinearScale, BarElement, LineElement, PointElement,
@@ -303,4 +303,106 @@ function getHeatColor(t: number): string {
         const b = Math.round(11 + tt * (68 - 11));
         return `rgb(${r},${g},${b})`;
     }
+}
+
+// ─── Trends Analysis Chart ────────────────────────────────────────────────────
+interface TrendProps {
+    trend: TrendPoint[];
+}
+
+export function TrendAnalysisChart({ trend }: TrendProps) {
+    const data = {
+        labels: trend.map((t) => t.period),
+        datasets: [
+            {
+                type: 'bar' as const,
+                label: 'Faturamento (R$)',
+                data: trend.map((t) => t.revenue),
+                backgroundColor: 'rgba(108, 99, 255, 0.4)',
+                borderColor: '#6c63ff',
+                borderWidth: 1,
+                yAxisID: 'y',
+            },
+            {
+                type: 'line' as const,
+                label: 'Unidades Vendidas',
+                data: trend.map((t) => t.units),
+                borderColor: '#06b6d4',
+                backgroundColor: 'transparent',
+                borderWidth: 3,
+                tension: 0.3,
+                pointRadius: 5,
+                yAxisID: 'y1',
+            },
+        ],
+    };
+
+    const options: ChartOptions<'bar'> = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: LEGEND_BASE,
+            tooltip: { ...TOOLTIP_BASE },
+        },
+        scales: {
+            y: {
+                ...SCALE_BASE,
+                type: 'linear' as const,
+                display: true,
+                position: 'left' as const,
+                title: { display: true, text: 'Faturamento', color: '#94a3b8' },
+            },
+            y1: {
+                ...SCALE_BASE,
+                type: 'linear' as const,
+                display: true,
+                position: 'right' as const,
+                grid: { drawOnChartArea: false },
+                title: { display: true, text: 'Unidades', color: '#94a3b8' },
+            },
+            x: SCALE_BASE,
+        },
+    };
+
+    return <Bar data={data as any} options={options as any} />;
+}
+
+// ─── Regional Stock Summary Bar ───────────────────────────────────────────────
+interface RegionalProps {
+    data: StockByRegion[];
+}
+
+export function RegionalStockBar({ data }: RegionalProps) {
+    const chartData = {
+        labels: data.map((d) => d.region),
+        datasets: [
+            {
+                label: 'Rupturas',
+                data: data.map((d) => d.ruptura),
+                backgroundColor: '#ef4444dd',
+                borderRadius: 4,
+            },
+            {
+                label: 'Encalhes',
+                data: data.map((d) => d.encalhe),
+                backgroundColor: '#f59e0bdd',
+                borderRadius: 4,
+            },
+        ],
+    };
+
+    const options: ChartOptions<'bar'> = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: LEGEND_BASE,
+            tooltip: { ...TOOLTIP_BASE },
+        },
+        scales: {
+            x: { ...SCALE_BASE, stacked: true },
+            y: { ...SCALE_BASE, stacked: true },
+        },
+    };
+
+    return <Bar data={chartData} options={options} />;
 }

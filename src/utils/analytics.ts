@@ -4,38 +4,56 @@ import type {
     ABCCurve,
     VolumeEffect,
     MixEffect,
+    TrendPoint,
+    StockByRegion,
     Alert,
     KPISummary,
     AlertType,
     AlertSeverity,
 } from '../types';
 
-// ─── ABC Curve Analysis ───────────────────────────────────────────────────────
+// ─── ABC Curve Analysis (dinâmico por receita acumulada) ──────────────────────
 export function computeABC(products: Product[]): ProductABC[] {
+    // Agrega por nome quando há multiplas regiões no mesmo período
+    const byName = new Map<string, Product>();
+    products.forEach((p) => {
+        const existing = byName.get(p.name);
+        if (!existing || p.revenue > existing.revenue) {
+            byName.set(p.name, p);
+        }
+    });
+
     const totalRevenue = products.reduce((s, p) => s + p.revenue, 0);
 
-    const sorted = [...products].sort((a, b) => b.revenue - a.revenue);
-
-    let cumulative = 0;
-    return sorted.map((p) => {
-        const revenueShare = totalRevenue > 0 ? p.revenue / totalRevenue : 0;
-        cumulative += revenueShare;
-
-        let curve: ABCCurve;
-        if (cumulative - revenueShare < 0.8) curve = 'A';
-        else if (cumulative - revenueShare < 0.95) curve = 'B';
-        else curve = 'C';
-
-        const stockTurnover = p.avgStock > 0 ? p.unitsSold / p.avgStock : 0;
-
-        return {
-            ...p,
-            curve,
-            revenueShare: revenueShare * 100,
-            cumulativeShare: cumulative * 100,
-            stockTurnover,
-        };
+    // Classifica por receita acumulada dos nomes únicos
+    const sortedNames = [...byName.values()].sort((a, b) => b.revenue - a.revenue);
+    let cumulativeRevenue = 0;
+    const curveMap = new Map<string, ABCCurve>();
+    sortedNames.forEach((p) => {
+        cumulativeRevenue += p.revenue;
+        // Classifica baseado na acumulada ANTES de adicionar esse produto
+        const priorPercent = (cumulativeRevenue - p.revenue) / (totalRevenue || 1);
+        if (priorPercent < 0.8) curveMap.set(p.name, 'A');
+        else if (priorPercent < 0.95) curveMap.set(p.name, 'B');
+        else curveMap.set(p.name, 'C');
     });
+
+    // Aplica a curva a todos os registros (incluindo regionais)
+    let cumulative = 0;
+    return [...products]
+        .sort((a, b) => b.revenue - a.revenue)
+        .map((p) => {
+            const revenueShare = totalRevenue > 0 ? p.revenue / totalRevenue : 0;
+            cumulative += revenueShare;
+            const stockTurnover = p.avgStock > 0 ? p.unitsSold / p.avgStock : 0;
+            return {
+                ...p,
+                curve: curveMap.get(p.name) ?? 'C',
+                revenueShare: revenueShare * 100,
+                cumulativeShare: cumulative * 100,
+                stockTurnover,
+            };
+        });
 }
 
 export function getABCDistribution(products: ProductABC[]) {
@@ -65,7 +83,6 @@ export function computeVolumeEffect(
 ): VolumeEffect[] {
     const result: VolumeEffect[] = [];
     const baseMap = new Map<string, Product>();
-
     baseline.forEach((p) => baseMap.set(`${p.name}|${p.region}`, p));
 
     current.forEach((p) => {
@@ -126,6 +143,50 @@ export function computeMixEffect(
     return result;
 }
 
+// ─── Trend Analysis (série temporal) ─────────────────────────────────────────
+export function computeTrend(allProducts: Product[], periods: string[]): TrendPoint[] {
+    return periods.map((period) => {
+        const ps = allProducts.filter((p) => p.period === period);
+        const revenue = ps.reduce((s, p) => s + p.revenue, 0);
+        const units = ps.reduce((s, p) => s + p.unitsSold, 0);
+        const valid = ps.filter((p) => p.avgStock > 0);
+        const avgTurnover = valid.length
+            ? valid.reduce((s, p) => s + p.unitsSold / p.avgStock, 0) / valid.length
+            : 0;
+        return { period, revenue, units, avgTurnover };
+    });
+}
+
+// ─── Stock by Region ──────────────────────────────────────────────────────────
+export function computeStockByRegion(products: ProductABC[]): StockByRegion[] {
+    const regionMap = new Map<string, {
+        curr: number; avg: number; ruptura: number; encalhe: number;
+    }>();
+
+    products.forEach((p) => {
+        const entry = regionMap.get(p.region) ?? { curr: 0, avg: 0, ruptura: 0, encalhe: 0 };
+        entry.curr += p.stock;
+        entry.avg += p.avgStock;
+
+        const ratio = p.avgStock > 0 ? p.stock / p.avgStock : 1;
+        if (ratio <= 0.15) entry.ruptura++;
+        if (ratio >= 3.5) entry.encalhe++;
+
+        regionMap.set(p.region, entry);
+    });
+
+    return [...regionMap.entries()]
+        .map(([region, d]) => ({
+            region,
+            currentStock: d.curr,
+            avgStock: d.avg,
+            stockRatio: d.avg > 0 ? d.curr / d.avg : 1,
+            ruptura: d.ruptura,
+            encalhe: d.encalhe,
+        }))
+        .sort((a, b) => a.stockRatio - b.stockRatio); // mais críticos primeiro
+}
+
 // ─── Stock Turnover ───────────────────────────────────────────────────────────
 export function computeAvgTurnover(products: Product[]): number {
     const valid = products.filter((p) => p.avgStock > 0);
@@ -134,24 +195,23 @@ export function computeAvgTurnover(products: Product[]): number {
 }
 
 // ─── Alerts ───────────────────────────────────────────────────────────────────
-const RUPTURA_STOCK_THRESHOLD = 0.15; // stock < 15% of avgStock
-const RUPTURA_SALES_PERCENTILE = 0.6; // unitsSold above 60th percentile
-const ENCALHE_STOCK_THRESHOLD = 3.5;  // stock > 3.5x avgStock
-const ENCALHE_SALES_PERCENTILE = 0.3; // unitsSold below 30th percentile
+const RUPTURA_STOCK_THRESHOLD = 0.15;
+const RUPTURA_SALES_PERCENTILE = 0.6;
+const ENCALHE_STOCK_THRESHOLD = 3.5;
+const ENCALHE_SALES_PERCENTILE = 0.3;
 
 export function generateAlerts(products: ProductABC[]): Alert[] {
     const alerts: Alert[] = [];
 
     const allSales = products.map((p) => p.unitsSold).sort((a, b) => a - b);
-    const p30 = allSales[Math.floor(allSales.length * ENCALHE_SALES_PERCENTILE)];
-    const p60 = allSales[Math.floor(allSales.length * RUPTURA_SALES_PERCENTILE)];
+    const p30 = allSales[Math.floor(allSales.length * ENCALHE_SALES_PERCENTILE)] ?? 0;
+    const p60 = allSales[Math.floor(allSales.length * RUPTURA_SALES_PERCENTILE)] ?? 0;
 
     const avgTurnover = computeAvgTurnover(products);
 
     products.forEach((p) => {
         const stockRatio = p.avgStock > 0 ? p.stock / p.avgStock : 1;
 
-        // Ruptura: high sales + low stock
         if (p.unitsSold >= p60 && stockRatio <= RUPTURA_STOCK_THRESHOLD) {
             alerts.push({
                 id: `ruptura-${p.id}`,
@@ -168,7 +228,6 @@ export function generateAlerts(products: ProductABC[]): Alert[] {
             });
         }
 
-        // Encalhe: low sales + high stock
         if (p.unitsSold <= p30 && stockRatio >= ENCALHE_STOCK_THRESHOLD) {
             alerts.push({
                 id: `encalhe-${p.id}`,
@@ -185,7 +244,6 @@ export function generateAlerts(products: ProductABC[]): Alert[] {
             });
         }
 
-        // Baixa performance: below avg turnover and curve A/B
         if (
             p.curve !== 'C' &&
             p.stockTurnover < avgTurnover * 0.5 &&
@@ -207,7 +265,7 @@ export function generateAlerts(products: ProductABC[]): Alert[] {
         }
     });
 
-    return alerts.slice(0, 50); // cap for performance
+    return alerts.slice(0, 60);
 }
 
 // ─── Master KPI Summary ───────────────────────────────────────────────────────
@@ -227,10 +285,18 @@ export function computeKPIs(
     const mixEffects = computeMixEffect(baselinePeriodProducts, filtered);
 
     const volumeEffectTotal =
-        volumeEffects.reduce((s, v) => s + v.delta, 0) /
-        (volumeEffects.length || 1);
+        volumeEffects.reduce((s, v) => s + v.delta, 0) / (volumeEffects.length || 1);
     const mixEffectTotal =
         mixEffects.reduce((s, m) => s + m.delta, 0) / (mixEffects.length || 1);
+
+    // Deltas percentuais vs período anterior
+    const baseRevenue = baselinePeriodProducts.reduce((s, p) => s + p.revenue, 0);
+    const baseUnits = baselinePeriodProducts.reduce((s, p) => s + p.unitsSold, 0);
+    const baseTurnover = computeAvgTurnover(baselinePeriodProducts);
+
+    const revenueDelta = baseRevenue > 0 ? ((totalRevenue - baseRevenue) / baseRevenue) * 100 : undefined;
+    const unitsDelta = baseUnits > 0 ? ((totalUnits - baseUnits) / baseUnits) * 100 : undefined;
+    const turnoverDelta = baseTurnover > 0 ? avgStockTurnover - baseTurnover : undefined;
 
     const alerts = generateAlerts(withABC);
 
@@ -244,5 +310,8 @@ export function computeKPIs(
         mixEffectTotal,
         activeAlerts: alerts.length,
         alerts,
+        revenueDelta,
+        unitsDelta,
+        turnoverDelta,
     };
 }

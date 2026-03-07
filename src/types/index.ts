@@ -4,30 +4,26 @@ export interface Product {
     id: string;
     name: string;
     region: string;
-    category?: string;
+    category?: string;   // fabricante / fornecedor
     revenue: number;
     unitsSold: number;
     stock: number;
     avgStock: number;
     price: number;
-    period: string; // e.g. "2024-01" or "Jan/24"
+    period: string;
 
     // ─── Campos estendidos do LayoutPadrao (relatório farmácia) ───────────
-    /** Código interno do produto no sistema PDV */
     codigoProduto?: string;
-    /** Custo da última compra (Custo Últ. Comp.) */
     cost?: number;
-    /** Unidades vendidas por dia (Un./dia) */
     unidadesDia?: number;
-    /** Dias de estoque disponível (Dias est. = Est. Atual / Un. dia) */
     diasEstoque?: number;
 }
 
 export interface ProductABC extends Product {
     curve: ABCCurve;
-    revenueShare: number; // % of total revenue
+    revenueShare: number;
     cumulativeShare: number;
-    stockTurnover: number; // Giro = unitsSold / avgStock
+    stockTurnover: number;
 }
 
 export interface VolumeEffect {
@@ -44,10 +40,28 @@ export interface MixEffect {
     product: string;
     region: string;
     period: string;
-    baselineShare: number; // % of basket in baseline
-    currentShare: number;  // % of basket in current
+    baselineShare: number;
+    currentShare: number;
     delta: number;
     deltaPercent: number;
+}
+
+/** Série temporal agregada por período — para gráfico de tendência */
+export interface TrendPoint {
+    period: string;
+    revenue: number;
+    units: number;
+    avgTurnover: number;
+}
+
+/** Snapshot de estoque agregado por região */
+export interface StockByRegion {
+    region: string;
+    currentStock: number;
+    avgStock: number;
+    stockRatio: number;         // current / avg
+    ruptura: number;            // qtd produtos em ruptura
+    encalhe: number;            // qtd produtos em encalhe
 }
 
 export type AlertType = 'ruptura' | 'encalhe' | 'baixa_performance';
@@ -77,11 +91,17 @@ export interface KPISummary {
     mixEffectTotal: number;
     activeAlerts: number;
     alerts: Alert[];
+    // Deltas vs período anterior (undefined quando sem baseline)
+    revenueDelta?: number;      // Δ% faturamento
+    unitsDelta?: number;        // Δ% unidades
+    turnoverDelta?: number;     // Δ absoluto giro
 }
 
 export interface FilterState {
     period: string;
     region: string;
+    category: string;    // fabricante / fornecedor
+    product: string;     // nome do produto
 }
 
 export interface LayoutPadraoMeta {
@@ -95,6 +115,6 @@ export interface ParsedData {
     products: Product[];
     periods: string[];
     regions: string[];
-    /** Preenchido quando o arquivo é reconhecido como LayoutPadrao */
+    categories: string[];
     layoutPadraoMeta?: LayoutPadraoMeta;
 }
