@@ -5,7 +5,7 @@
 
 **Análise de performance comercial em tempo real para redes de varejo e farmácias**
 
-[![Firebase Hosting](https://img.shields.io/badge/Firebase-Hosting-orange?logo=firebase&logoColor=white)](https://boost--mark.web.app)
+[![Deploy](https://img.shields.io/badge/Firebase-Live-orange?logo=firebase&logoColor=white)](https://boost--mark.web.app)
 [![Vite](https://img.shields.io/badge/Vite-7.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -21,49 +21,54 @@
 
 ## 📌 Sobre o Projeto
 
-O **BoostMark** é uma plataforma SaaS de análise sell-out desenvolvida para equipes de trade marketing, gerentes comerciais e analistas de dados. A ferramenta transforma relatórios brutos de PDV (Excel/CSV) em insights acionáveis — sem necessidade de configuração manual.
-
-### Por que o BoostMark?
+O **BoostMark** é uma plataforma de análise sell-out para equipes de trade marketing, gerentes comerciais e analistas de dados. A ferramenta transforma relatórios brutos de PDV (Excel/CSV) em insights acionáveis — sem necessidade de configuração manual.
 
 | Problema | Solução BoostMark |
 |---|---|
-| Relatórios de PDV com centenas de linhas e colunas mescladas | **Parser inteligente** detecta e extrai automaticamente |
-| ABC calculado manualmente em planilhas | **Classificação dinâmica** via acumulado de faturamento real |
-| Alertas de ruptura detectados tarde demais | **Motor de alertas em tempo real** com prioridade por severidade |
-| Análise de volumetria e mix manual | **Efeito Volume e Efeito Mix** calculados e visualizados |
-| Falta de contexto histórico | **Tendência de Vendas** com histórico integrado no dashboard |
+| Relatórios de PDV complexos e mesclados | Parser inteligente com detecção automática de layout |
+| ABC calculado manualmente | Classificação dinâmica via acumulado de faturamento (Pareto) |
+| Alertas de ruptura detectados tarde | Motor de alertas em tempo real com prioridade por severidade |
+| Sem contexto temporal | Comparativo automático com período anterior (Δ nos KPIs) |
+| Gestão por loja difícil | Estoque por PDV com contagem de rupturas e encalhes por região |
 
 ---
 
-## ✨ Funcionalidades
+## ✨ Funcionalidades (v1.1)
 
-### 📊 KPIs com Comparativo (Δ)
-- **Faturamento Total** — Receita agregada com variação percentual (Δ%) vs. período anterior
-- **Curva ABC Dinâmica** — Classificação automática baseada no acumulado de Pareto (A=80%)
-- **Efeito Volume** — Ganhos e perdas em unidades vendidas vs. período anterior
-- **Efeito Mix** — Variação percentual na participação de cada item na cesta
-- **Giro de Estoque** — Velocidade de saída (Vendas/Estoque) com Δ absoluto vs. baseline
-- **Alertas Ativos** — Contagem de ocorrências críticas com indicador de urgência
+### 📊 KPIs com Comparativo Temporal (Δ)
+| KPI | Descrição |
+|---|---|
+| **Faturamento** | Receita total + variação % vs. período anterior |
+| **Curva ABC** | Classificação dinâmica pelos 80/15/5% do faturamento acumulado |
+| **Efeito Volume** | Δ unidades vendidas vs. baseline |
+| **Efeito Mix** | Δ participação percentual na cesta de compras |
+| **Giro de Estoque** | Vendas ÷ Estoque Médio + Δ absoluto vs. baseline |
+| **Alertas Ativos** | Contagem de ocorrências críticas por tipo |
 
-### 🚨 Sistema de Alertas Inteligente
-| Tipo | Critério | Severidade |
+### 🚨 Alertas Automáticos
+| Tipo | Critério | Ação Sugerida |
 |---|---|---|
-| **Ruptura** | Vendas acima da média + Estoque crítico (< 15% do consumo) | 🔴 Alta |
-| **Encalhe** | Vendas estagnadas + Estoque excedente (> 3.5x o médio) | 🟡 Média |
-| **Baixa Performance** | Giro < 50% da média histórica + Item Curva A ou B | 🔵 Baixa |
+| 🔴 **Ruptura** | Venda alta + estoque < 15% do médio | Reposição urgente |
+| 🟡 **Encalhe** | Venda baixa + estoque > 3,5× o médio | Promoção / redistribuição |
+| 🔵 **Baixa Performance** | Giro < 50% da média (Curva A ou B) | Revisão de preço / exposição |
 
-### 📈 Visualizações Avançadas
-- **Tendência de Vendas (Histórico)** — Gráfico misto de barras e linhas (Faturamento vs. Unidades)
-- **Saúde de Estoque Regional** — Gráfico de barras por loja mostrando Rupturas e Encalhes por PDV
-- **Doughnut ABC** — Proporção de itens A/B/C com contagem e percentual
-- **Bar Chart Ranking** — Top 15 produtos por faturamento coloridos por curva
-- **Heatmap de Giro** — Matriz Produto × Região com escala de calor para identificação de gargalos
+### 📈 Visualizações
 
-### 📂 Inteligência de Dados
-- **Filtros Avançados** — Filtre por Período, Região, **Fabricante/Fornecedor** e **Busca por Produto**
-- **Formato XLSX** — Detecção automática do layout de relatórios de PDV (Layout Padrão)
-- **Baseline Dinâmico** — Comparação temporal automática com o período cronológico anterior
-- **Custom Logo** — Interface personalizada com a marca **BoostMark**
+| Gráfico | Descrição |
+|---|---|
+| **Tendência de Vendas** | Série histórica de faturamento (barras) × unidades (linha) |
+| **Saúde de Estoque por PDV** | Rupturas e encalhes agrupados por loja/região |
+| **Ranking ABC** | Top 15 produtos por faturamento, coloridos por curva |
+| **Distribuição ABC** | Doughnut com proporção de itens A/B/C |
+| **Efeito Volume** | Linha de tendência de variação de unidades por produto |
+| **Efeito Mix** | Barras de ganho/perda de participação (verde/vermelho) |
+| **Heatmap de Giro** | Matriz Produto × Região com escala térmica |
+
+### 🔍 Filtros Avançados
+- **Período** — Recorte temporal; ativa comparativo automático com o período anterior
+- **Região / Loja** — Isolamento de análise por unidade
+- **Fabricante / Fornecedor** — Filtro para revisões comerciais (JBP)
+- **Busca por Produto** — Pesquisa instantânea por nome ou código
 
 ---
 
@@ -72,81 +77,115 @@ O **BoostMark** é uma plataforma SaaS de análise sell-out desenvolvida para eq
 ```
 src/
 ├── components/
-│   ├── AlertsPanel/     # Painel de alertas com filtros por tipo
-│   ├── Charts/          # Todos os gráficos (Chart.js + react-chartjs-2)
-│   ├── FileUpload/      # Drag-and-drop com estados de loading/sucesso/erro
-│   ├── Filters/         # Seletores Avançados (Período, Região, Fabricante, Busca)
-│   └── KPICards/        # Cards KPI com deltas de comparação temporal
+│   ├── AlertsPanel/     # Painel de alertas filtrados por tipo e severidade
+│   ├── Charts/          # ABCDoughnut, ABCRevenueBar, VolumeEffectLine,
+│   │                    # MixEffectBar, StockTurnoverHeatmap,
+│   │                    # TrendAnalysisChart, RegionalStockBar
+│   ├── FileUpload/      # Drag-and-drop + parser de XLSX e CSV
+│   ├── Filters/         # Período · Região · Fabricante · Produto
+│   └── KPICards/        # 6 cards com deltas temporais
 ├── types/
-│   └── index.ts         # Interfaces TypeScript (Product, ParsedData, Alert, TrendPoint…)
+│   └── index.ts         # Product, ProductABC, TrendPoint, StockByRegion,
+│                        # KPISummary (com Δ), FilterState, ParsedData
 ├── utils/
-│   ├── analytics.ts     # Motor de KPIs: ABC Dinâmico, Volume, Mix, Tendência, Alertas
-│   └── fileParser.ts    # Parser XLSX/CSV com detecção de LayoutPadrao e Categorias
+│   ├── analytics.ts     # computeABC, computeKPIs, computeTrend,
+│   │                    # computeStockByRegion, generateAlerts
+│   └── fileParser.ts    # Parser XLSX (LayoutPadrao automático) e CSV
+├── data/
+│   └── logomarca.png    # Logomarca exibida no Empty State
 ├── firebase.ts          # Inicialização Firebase + Analytics
-├── App.tsx              # Layout principal + logic de filtragem e baseline
-└── index.css            # Design system: dark theme, glassmorphism, animações, logos
+└── App.tsx              # Estado global, filtros, baseline dinâmico
+```
+
+### Fluxo de Dados
+
+```
+Arquivo XLSX / CSV
+      │
+      ▼ fileParser.ts
+  LayoutPadrao? ──── sim ──► extrai empresa, lojas, período, fabricante
+      │ não
+      ▼ mapGenericRow()
+Product[] + periods[] + regions[] + categories[]
+      │
+      ▼ analytics.ts
+  computeABC()           → curva A/B/C por acumulado Pareto
+  computeKPIs()          → totais + Δ vs. baseline
+  computeTrend()         → série temporal por período
+  computeStockByRegion() → rupturas/encalhes por loja
+  generateAlerts()       → alertas priorizados
+      │
+      ▼ UI Components
+KPICards · Charts · AlertsPanel · Filters
 ```
 
 ---
 
-## 🚀 Getting Started
-
-### Pré-requisitos
-- Node.js ≥ 18
-- npm ≥ 9
-- Firebase CLI (`npm install -g firebase-tools`)
-
-### Instalação
+## 🚀 Setup Local
 
 ```bash
-# Clone o repositório
+# Clone
 git clone https://github.com/seu-usuario/boostmark.git
 cd boostmark
 
-# Instale as dependências
+# Dependências
 npm install
 
-# Inicie o servidor de desenvolvimento
+# Dev server
 npm run dev
+# → http://localhost:5173
 ```
-
-Acesse: `http://localhost:5173`
 
 ---
 
-## 🔥 Deploy no Firebase
+## 🔥 Deploy Firebase
 
 ```bash
-# Build de Produção
 npm run build
-
-# Deploy
 firebase deploy --only hosting
+# → https://boost--mark.web.app
 ```
 
-URL de produção: **https://boost--mark.web.app**
+---
+
+## 🧪 Formato de Dados
+
+### XLSX — Detecção Automática (LayoutPadrao)
+
+Relatórios **"Mais Vendidos Por Quantidade"** exportados do sistema PDV são detectados automaticamente. Nenhum ajuste é necessário.
+
+| Linha | Conteúdo |
+|---|---|
+| 0 | Nome da empresa + timestamp |
+| 2 | Período (`Período de DD/MM/AAAA à DD/MM/AAAA`) |
+| 3 | Lojas (`Referente As Lojas: 1, 2, 3...`) |
+| 4 | Cabeçalho das colunas |
+| 5+ | Dados dos produtos |
+
+Colunas mapeadas: Produto · Descrição · Valor Total · Qtd. Vendida · Custo · Est. Atual · Un./dia · Dias de Estoque · Fabricante.
+
+### CSV — Mapeamento Flexível
+
+Baixe o **Template CSV** no dashboard. Cabeçalho mínimo:
+
+```csv
+name,region,category,revenue,unitsSold,stock,avgStock,price,period
+Dipirona 500mg,Loja 1,Neo Química,980.00,70,42,55,14.00,Fev/26
+```
 
 ---
 
-## 🧪 Formato do Arquivo de Importação
-
-### LayoutPadrao XLSX (Detecção Automática)
-O sistema detecta automaticamente relatórios no formato **"Mais Vendidos Por Quantidade"**. O parser extrai metadados (Empresa, Lojas, Datas) e mapeia colunas como Fabricante, Custo, Estoque e Unidades Dia.
-
-### CSV Personalizável
-Baixe o **Template CSV** no dashboard e preencha com seus dados para importação rápida.
-
----
-
-## 📦 Stack Tecnológica
+## 📦 Stack
 
 | Tecnologia | Versão | Uso |
 |---|---|---|
 | React | 19 | UI components |
-| TypeScript | 5 | Type safety estrito |
-| Vite | 7 | Build tool + dev server |
-| Chart.js | 4 | Visualizações |
-| xlsx | 0.18 | Parse de arquivos Excel |
+| TypeScript | 5 | Tipagem estrita |
+| Vite | 7 | Build + dev server |
+| Chart.js + react-chartjs-2 | 4 / 5 | Todos os gráficos |
+| xlsx | 0.18 | Parse de Excel |
+| papaparse | 5 | Parse de CSV |
+| lucide-react | latest | Ícones |
 | Firebase | 11 | Hosting + Analytics |
 
 ---
@@ -158,7 +197,5 @@ Projeto privado — **Porto Farma / BoostMark** © 2026. Todos os direitos reser
 ---
 
 <div align="center">
-
-Desenvolvido com ⚡ e muito ☕ para análises de sell-out mais inteligentes
-
+Desenvolvido com ⚡ para análises de sell-out mais inteligentes
 </div>
